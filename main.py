@@ -1,6 +1,6 @@
 from config import logger
 from dispatcher import dispatch
-from performer import perform
+from performer import parking, operations, sales
 
 if __name__ == '__main__':
     try:
@@ -8,6 +8,16 @@ if __name__ == '__main__':
     except Exception as e:
         logger.exception(str(e))
     try:
-        perform()
+        parking()
+    except Exception as e:
+        logger.exception(str(e))
+
+    try:
+        operations()
+    except Exception as e:
+        logger.exception(str(e))
+
+    try:
+        sales()
     except Exception as e:
         logger.exception(str(e))

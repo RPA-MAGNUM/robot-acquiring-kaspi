@@ -1,6 +1,7 @@
 import datetime
 import os
 import shutil
+import sys
 import time
 import traceback
 from pathlib import Path
@@ -1375,21 +1376,16 @@ def update_statuses_uploaded(rows):
 
 
 def perform():
-    # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
-
-    # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
     operation_date = None
     today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
             date_m = date_m.strftime("%d.%m.%Y")
         if date_m == today:
             if row[2].value == "выходной":
-                wb.close()
                 return
             else:
                 pass
@@ -1399,7 +1395,6 @@ def perform():
         if isinstance(operation_date, datetime.datetime):
             operation_date = operation_date.strftime("%d.%m.%Y")
         print(f"Operation_date: {operation_date}")
-    wb.close()
 
     # Step 2: Создавать плтежное поручение
     while True:
@@ -1498,184 +1493,36 @@ def perform():
     logger.info(f'Загрузка и сверка завершена.\nЗавершение')
 
 
-def operations():
-    # * Reading the daily execution schedule
-    wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
-
-    # Step 1: Определить рабочий день-----------------
-    ws = wb['Каспи']
-    operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
-    for idx, row in enumerate(ws.iter_rows(min_row=0)):
-        date_m = row[0].value
-        if isinstance(date_m, datetime.datetime):
-            date_m = date_m.strftime("%d.%m.%Y")
-        if date_m == today:
-            if row[2].value == "выходной":
-                wb.close()
-                return
-            else:
-                pass
-        else:
-            continue
-        operation_date = row[1].value
-        if isinstance(operation_date, datetime.datetime):
-            operation_date = operation_date.strftime("%d.%m.%Y")
-        print(f"Operation_date: {operation_date}")
-    wb.close()
-
-    # Step 2: Создавать плтежное поручение
-    while True:
-        select_one_query = f"""SELECT * FROM ROBOT.{robot_name.replace('-', '_')} where (executor_name is NULL OR executor_name = '{ip_address}')
-         AND status IN ('New','Retried')  ORDER BY RANDOM();"""
-
-        conn = psycopg2.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pass)
-        c = conn.cursor()
-        c.execute(select_one_query)
-        row = c.fetchone()
-        if row:
-            # * If the retry_count exceeded  stop and set it to fail
-            if int(row[2]) > transaction_retry_count:
-                update_executor_query = f"UPDATE ROBOT.{robot_name.replace('-', '_')} SET executor_name ='{ip_address}', status ='Fail' WHERE id = '{row[0]}' "
-                c.execute(update_executor_query)
-                conn.commit()
-                c.close()
-                conn.close()
-                continue
-            else:
-                update_executor_query = f"UPDATE ROBOT.{robot_name.replace('-', '_')} SET executor_name ='{ip_address}' WHERE id = '{row[0]}'"
-            c.execute(update_executor_query)
-            conn.commit()
-            c.close()
-            conn.close()
-            tr: Transaction = Transaction(row)
-
-            # * Main function-------------
-            tr.process()
-            # * Main function END ------
-            tr.update()
-            del tr
-        else:
-            break
-
-
-def parking():
-    # * Reading the daily execution schedule
-    wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
-    # Step 1: Определить рабочий день-----------------
-    ws = wb['Каспи']
-    operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
-    for idx, row in enumerate(ws.iter_rows(min_row=0)):
-        date_m = row[0].value
-        if isinstance(date_m, datetime.datetime):
-            date_m = date_m.strftime("%d.%m.%Y")
-        if date_m == today:
-            if row[2].value == "выходной":
-                wb.close()
-                return
-            else:
-                pass
-        else:
-            continue
-        operation_date = row[1].value
-        if isinstance(operation_date, datetime.datetime):
-            operation_date = operation_date.strftime("%d.%m.%Y")
-        print(f"Operation_date: {operation_date}")
-    wb.close()
-
-    upload_parking_process()
-
-
-def sales():
-    # * Reading the daily execution schedule
-    wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
-
-    # Step 1: Определить рабочий день-----------------
-    ws = wb['Каспи']
-    operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
-    for idx, row in enumerate(ws.iter_rows(min_row=0)):
-        date_m = row[0].value
-        if isinstance(date_m, datetime.datetime):
-            date_m = date_m.strftime("%d.%m.%Y")
-        if date_m == today:
-            if row[2].value == "выходной":
-                wb.close()
-                return
-            else:
-                pass
-        else:
-            continue
-        operation_date = row[1].value
-        if isinstance(operation_date, datetime.datetime):
-            operation_date = operation_date.strftime("%d.%m.%Y")
-        print(f"Operation_date: {operation_date}")
-    wb.close()
-
-    # Step 4: Далее отрабатываем общий файл продаж по пос. терминалу
-    datetime_obj = datetime.datetime.strptime(operation_date, "%d.%m.%Y")
-    current_month: int = datetime_obj.month
-    current_month_folder_name: str = months[current_month]
-    current_year: int = datetime_obj.year
-    sales_report = Path(str_sales_folder).joinpath(f"POS терминал {current_year}", current_month_folder_name)
-    print(str(sales_report))
-    sales_file_found = False
-    for i in range(10):
-        for sale_file in os.listdir(str(sales_report)):
-            if operation_date in sale_file:
-                sales_report = sales_report.joinpath(sale_file)
-                sales_file_found = True
-            print(f"sale_file: {sale_file}")
-        print(sales_report)
-        if not sales_file_found:
-            logger.warning(f'не найден sales report от {operation_date}, ожидание 15мин')
-            time.sleep(60*15)
-        else:
-            break
-
-    # * проверка пустых
-    # check_sales_report(sales_report)
-    # Step 5: В сохраненном файле нужно проверить точки продаж на наличие открытия новых
-    check_sales_report_for_new_branches(sales_report)
-
-    # Step 6: Далее загружаем Sales Report в Обработку эквайринговых операций. Указываем дату выписки, путь,
-    # где расположен файл. Нажимаем Подготовить данные для загрузки
-    if not sales_file_found:
-        logger.info(f"Sales report за {operation_date} не найдена")
-        return
-    # logger.info(f'Запуск загрузки Sales Report')
-    res = prepare_upload_folder_for_one(sales_report, split=True)
-    if res:
-        received_file = None
-        for i in range(3):
-            try:
-                received_file = upload_sales_report_1c(process_date=operation_date)
-                break
-            except (Exception,):
-                time.sleep(60*15)
-
-        if not received_file:
-            logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
-            return
-        # elif isinstance(received_file, bool):
-        #     logger.info("Не получили файл с 1с")
-        #     return
-        res = check_sales_report_vs_report_received(received_file, sales_report)
-        if res:
-            # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
-            report_path = download_report(report_date=operation_date)
-            check_osv(report_path)
-
-    notify_clients()
-
-
 if __name__ == '__main__':
     kill_process_list()
-    # perform()
-    parking()
-    operations()
-    sales()
+
+    wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
+    ws = wb['Каспи']
+    operation_dates = None
+    today = datetime.datetime.now().strftime("%d.%m.%Y")
+    rows = {
+        r[0].strftime("%d.%m.%Y") if isinstance(r[0], datetime.datetime) else r[0]: (r[1], r[2])
+        for r in ws.values
+        if r[2] != "выходной"
+    }
+    operation_date = rows.get(today)
+    if not today_:
+        logger.info('сегодня выходной')
+        sys.exit(0)
+
+
+    for idx, row in enumerate(ws.iter_rows(min_row=0)):
+        date_m = row[0].value
+        if isinstance(date_m, datetime.datetime):
+            date_m = date_m.strftime("%d.%m.%Y")
+        if date_m == today:
+            if row[2].value == "выходной":
+                sys.exit(0)
+            else:
+                pass
+        else:
+            continue
+        operation_date = row[1].value
+        if isinstance(operation_date, datetime.datetime):
+            operation_date = operation_date.strftime("%d.%m.%Y")
+        print(f"Operation_date: {operation_date}")
