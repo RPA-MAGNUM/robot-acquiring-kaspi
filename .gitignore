@@ -3,7 +3,6 @@
 /docs/
 /downloads/
 /tasks/
-/backup/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -134,4 +133,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/manual/
+/__backup__/
+/__temp__/
