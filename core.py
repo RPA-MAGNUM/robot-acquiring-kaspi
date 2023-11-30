@@ -30,7 +30,7 @@ class Odines(App):
             "parent": self.root
         }
         self.root_selector = {
-            "title_re": "1С:Предприятие - Алматы центр / ТОО \"Magnum Cash&Carry\" / Алматы  управление / .*",
+            "title_re": "1С:Предприятие - .*",
             "class_name": "V8TopLevelFrame", "control_type": "Window",
             "visible_only": True, "enabled_only": True, "found_index": 0,
             "parent": None
