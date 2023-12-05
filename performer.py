@@ -963,6 +963,8 @@ def upload_parking(search_date, process_date):
 
 
 def split_branches(src_file, dst_dir):
+    print('!!!', src_file)
+    print('!!!', dst_dir)
     from pathlib import Path
     from openpyxl.reader.excel import load_workbook
     from openpyxl.workbook import Workbook
@@ -1017,8 +1019,8 @@ def prepare_upload_folder_for_one(file_full_path, split=False):
         if not split:
             shutil.copy(file_full_path, dst_file_path)
         else:
-            # split_branches(file_full_path, upload_folder)
-            Popen(['split_branches.exe', file_full_path.__str__(), upload_folder.__str__()]).wait()
+            split_branches(file_full_path, upload_folder)
+            # Popen(['split_branches.exe', file_full_path.__str__(), upload_folder.__str__()]).wait()
         # logger.info("Файл был скопирован в папку для загрузки")
         return True
     except Exception as ex:
@@ -1592,12 +1594,9 @@ def parking():
 def sales():
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
-
-    # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
     operation_date = None
     today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
@@ -1615,8 +1614,6 @@ def sales():
             operation_date = operation_date.strftime("%d.%m.%Y")
         print(f"Operation_date: {operation_date}")
     wb.close()
-
-    # Step 4: Далее отрабатываем общий файл продаж по пос. терминалу
     datetime_obj = datetime.datetime.strptime(operation_date, "%d.%m.%Y")
     current_month: int = datetime_obj.month
     current_month_folder_name: str = months[current_month]
@@ -1638,17 +1635,15 @@ def sales():
             break
 
     # * проверка пустых
-    # check_sales_report(sales_report)
-    # Step 5: В сохраненном файле нужно проверить точки продаж на наличие открытия новых
     check_sales_report_for_new_branches(sales_report)
-
-    # Step 6: Далее загружаем Sales Report в Обработку эквайринговых операций. Указываем дату выписки, путь,
-    # где расположен файл. Нажимаем Подготовить данные для загрузки
     if not sales_file_found:
         logger.info(f"Sales report за {operation_date} не найдена")
         return
-    # logger.info(f'Запуск загрузки Sales Report')
+
+    # * разбивка
     res = prepare_upload_folder_for_one(sales_report, split=True)
+
+    # * загрузка
     if res:
         received_file = None
         for i in range(3):

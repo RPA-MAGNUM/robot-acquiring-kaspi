@@ -112,8 +112,8 @@ if __name__ == '__main__':
         f'app.ico',
         '--add-data',
         f'{root_path.joinpath("app.ico").__str__()};.',
-        '--add-data',
-        f'{root_path.joinpath("split_branches.exe").__str__()};.'
+        # '--add-data',
+        # f'{root_path.joinpath("split_branches.exe").__str__()};.'
     ]
     builder.build(command_)
     builder.post()
