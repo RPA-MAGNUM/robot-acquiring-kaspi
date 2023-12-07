@@ -58,7 +58,7 @@ db_pass = global_env_data['postgre_db_password']
 robot_name = "robot-acquiring-kaspi"
 robot_name_russian = "Робот Эквайринг Каспи"
 
-temp_folder = global_path.joinpath(f".agent\\{robot_name}\\temp")
+temp_folder = local_path.joinpath(f".agent\\{robot_name}\\temp")
 temp_folder.mkdir(exist_ok=True, parents=True)
 
 config_path = global_path.joinpath(f'.agent\\{robot_name}\\{get_hostname()}\\config.json')

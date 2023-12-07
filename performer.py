@@ -4,7 +4,7 @@ import shutil
 import time
 import traceback
 from pathlib import Path
-from subprocess import Popen
+# from subprocess import Popen
 
 import openpyxl
 import pandas as pd
@@ -974,7 +974,7 @@ def split_branches(src_file, dst_dir):
     wb = load_workbook(src_file.__str__())
     ws = wb.active
     vs = list(ws.values)
-    start_row = [n for n, r in enumerate(vs) if r[0] == '#'][0]
+    start_row = [n for n, r in enumerate(vs) if r[1] == 'Адрес точки продаж'][0]
 
     branches = dict()
     for n, row in enumerate(vs):
@@ -1506,7 +1506,7 @@ def operations():
 
     # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
-    operation_date = None
+    # operation_date = None
     today = datetime.datetime.now().strftime("%d.%m.%Y")
     # today = "12.07.2023"
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
@@ -1567,7 +1567,7 @@ def parking():
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
-    operation_date = None
+    # operation_date = None
     today = datetime.datetime.now().strftime("%d.%m.%Y")
     # today = "12.07.2023"
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
@@ -1591,7 +1591,7 @@ def parking():
     upload_parking_process()
 
 
-def sales():
+def prepare():
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     ws = wb['Каспи']
@@ -1642,28 +1642,71 @@ def sales():
 
     # * разбивка
     res = prepare_upload_folder_for_one(sales_report, split=True)
+    return res
 
-    # * загрузка
+
+def sales():
+    # * Reading the daily execution schedule
+    wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
+    ws = wb['Каспи']
+    operation_date = None
+    today = datetime.datetime.now().strftime("%d.%m.%Y")
+    for idx, row in enumerate(ws.iter_rows(min_row=0)):
+        date_m = row[0].value
+        if isinstance(date_m, datetime.datetime):
+            date_m = date_m.strftime("%d.%m.%Y")
+        if date_m == today:
+            if row[2].value == "выходной":
+                wb.close()
+                return
+            else:
+                pass
+        else:
+            continue
+        operation_date = row[1].value
+        if isinstance(operation_date, datetime.datetime):
+            operation_date = operation_date.strftime("%d.%m.%Y")
+        print(f"Operation_date: {operation_date}")
+    wb.close()
+    datetime_obj = datetime.datetime.strptime(operation_date, "%d.%m.%Y")
+    current_month: int = datetime_obj.month
+    current_month_folder_name: str = months[current_month]
+    current_year: int = datetime_obj.year
+    sales_report = Path(str_sales_folder).joinpath(f"POS терминал {current_year}", current_month_folder_name)
+    print(str(sales_report))
+    sales_file_found = False
+    for i in range(10):
+        for sale_file in os.listdir(str(sales_report)):
+            if operation_date in sale_file:
+                sales_report = sales_report.joinpath(sale_file)
+                sales_file_found = True
+            print(f"sale_file: {sale_file}")
+        print(sales_report)
+        if not sales_file_found:
+            logger.warning(f'не найден sales report от {operation_date}, ожидание 15мин')
+            time.sleep(60*15)
+        else:
+            break
+
+    received_file = None
+    for i in range(3):
+        try:
+            received_file = upload_sales_report_1c(process_date=operation_date)
+            break
+        except (Exception,):
+            time.sleep(60*15)
+
+    if not received_file:
+        logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
+        return
+    # elif isinstance(received_file, bool):
+    #     logger.info("Не получили файл с 1с")
+    #     return
+    res = check_sales_report_vs_report_received(received_file, sales_report)
     if res:
-        received_file = None
-        for i in range(3):
-            try:
-                received_file = upload_sales_report_1c(process_date=operation_date)
-                break
-            except (Exception,):
-                time.sleep(60*15)
-
-        if not received_file:
-            logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
-            return
-        # elif isinstance(received_file, bool):
-        #     logger.info("Не получили файл с 1с")
-        #     return
-        res = check_sales_report_vs_report_received(received_file, sales_report)
-        if res:
-            # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
-            report_path = download_report(report_date=operation_date)
-            check_osv(report_path)
+        # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
+        report_path = download_report(report_date=operation_date)
+        check_osv(report_path)
 
     notify_clients()
 
