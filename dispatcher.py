@@ -65,7 +65,7 @@ def search_files(root_dir, keyword):
 
 
 def dispatch():
-    logger.info("Starting dispatcher")
+    print("Starting dispatcher")
 
     # logger.info("0) START table_create - простое создание таблицы в postgre")
     table_create()
@@ -114,10 +114,10 @@ def dispatch():
         if not holiday:
             operation_date = row[1].value
             folder_dates = row[4].value
-            logger.info(f"Operation date: {operation_date}")
+            # logger.info(f"Operation date: {operation_date}")
             break
     if holiday:
-        logger.info("Не нашли дату")
+        # logger.info("Не нашли дату")
         return
     if isinstance(operation_date, datetime.datetime):
         folder_date = operation_date.strftime("%d.%m.%Y")
@@ -185,7 +185,7 @@ def dispatch():
             c.execute(find_query)
             result = c.fetchone()
             if result is None:
-                logger.info(f"operation date at the end{operation_date}")
+                # logger.info(f"operation date at the end{operation_date}")
 
                 # * insert a transaction to db
                 insert_query = f"""Insert into ROBOT.{robot_name.replace('-', '_')} (id, document_number, debit_credit_sum, purpose_of_payment, folder_date, operation_date,  status, retry_count, date_created) values ('{uuid.uuid4()}', '{document_number}', '{debit_credit_sum}', '{purpose_of_payment}', '{folder_dates}', '{operation_date}' , 'New', 0, '{str_now}') """
@@ -195,7 +195,7 @@ def dispatch():
 
             # * close db connection
 
-    logger.info(f"Added {transaction_count} rows to  the DB")
+    logger.info(f"Зарегистрировано {transaction_count} операций")
     # logger.info(f"2) END чтение мэйн файла, если нет такого создаст сам {file_path}")
 
     # * Добавляем в бд парковки
@@ -214,10 +214,10 @@ def dispatch():
 
         if date_m == today:
             if row[2].value == "выходной":
-                logger.info("Сегодня выходной")
+                print("Сегодня выходной")
                 return
             else:
-                logger.info("Сегодня рабочий день")
+                print("Сегодня рабочий день")
                 # holiday = False
 
         else:
@@ -256,7 +256,7 @@ def dispatch():
             c.execute(find_query)
             result = c.fetchone()
             if result is None:
-                logger.info(f"operation date at the end{operation_date}")
+                # logger.info(f"operation date at the end {operation_date}")
 
                 # * insert a transaction to db
                 insert_query = f"""Insert into ROBOT.{robot_name.replace('-', '_')}_parking (id,  folder_date, operation_date,  status, retry_count, date_created, file_path) values ('{uuid.uuid4()}',
@@ -265,8 +265,8 @@ def dispatch():
                 c.execute(insert_query)
                 conn.commit()
                 transaction_count += 1
-    logger.info(f"added {transaction_count} parkings to db")
-    logger.info("Dispatcher ended")
+    # logger.info(f"added {transaction_count} parkings to db")
+    # logger.info("Dispatcher ended")
     c.close()
     conn.close()
     # logger.info("Закончили")

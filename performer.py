@@ -985,7 +985,9 @@ def split_branches(src_file, dst_dir):
         else:
             branches[row[1]].append(row)
 
-    for n, branch in enumerate(list(branches.keys())):
+    iter_data = list(branches.keys())
+    iter_len = len(iter_data)
+    for n, branch in enumerate(iter_data):
         new_wb = Workbook()
         new_ws = new_wb.active
         new_ws.title = ws.title
@@ -993,12 +995,13 @@ def split_branches(src_file, dst_dir):
         [new_ws.append(r) for r in branches[branch]]
         new_wb.save(dst_dir.joinpath(f'{src_file.stem}_{n}{src_file.suffix}'))
         new_wb.close()
+        print(n+1, 'from', iter_len)
     wb.close()
     del wb
     del ws
     del vs
     del branches
-
+    del iter_data
 
 def prepare_upload_folder_for_one(file_full_path, split=False):
     # logger.info(f"Загружаем файл парковки: {file_full_path}")
@@ -1278,7 +1281,10 @@ def upload_sales_report_1c(process_date):
                            "enabled_only": True, "found_index": 0}
 
     time.sleep(3)
-    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=300)
+    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=600)
+    if not bottom_notification_appeared:
+        app.find_element(upload_button).click()
+    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=1800)
     if bottom_notification_appeared:
         text = app.find_element(bottom_notification).element.iface_value.CurrentValue
         if "конфликт блокировок" in text:
