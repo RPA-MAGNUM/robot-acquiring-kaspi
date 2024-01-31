@@ -1,12 +1,14 @@
 import ctypes
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 
+from holidays import parse, generate
 from logs import init_logger
-from rpamini import json_read, net_use, get_hostname
+from rpamini import json_read, net_use, get_hostname, json_write
 
 disable_warnings(InsecureRequestWarning)
 
@@ -100,7 +102,13 @@ to_whom = json_read(config_path)['to_whom']
 cc_whom = json_read(config_path)['cc_whom']
 bool_use_prod_1c = True
 
+holydays_path = global_path.joinpath(f'holydays_{datetime.now().year}.json')
+if not holydays_path.is_file():
+    json_write(holydays_path, [d.strftime('%d.%m.%Y') for d in parse(datetime.now().year)])
+
 transaction_retry_count = 2
 if ctypes.windll.user32.GetKeyboardLayout(0) != 67699721:
     __err__ = 'Смените раскладку на ENG'
     raise Exception(__err__)
+
+generate(Path(str_date_working_file))

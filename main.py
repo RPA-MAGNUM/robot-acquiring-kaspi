@@ -3,23 +3,24 @@ from dispatcher import dispatch
 from performer import parking, operations, sales, prepare
 
 if __name__ == '__main__':
+    delta = 1
     try:
         logger.warning('> подготовка')
-        dispatch()
+        dispatch(delta)
         logger.warning('+ подготовка')
     except Exception as e:
         logger.warning(f'- подготовка {str(e)}')
 
     try:
         logger.warning('> парковка')
-        parking()
+        parking(delta)
         logger.warning('+ парковка')
     except Exception as e:
         logger.warning(f'- парковка {str(e)}')
 
     try:
         logger.warning('> операции')
-        operations()
+        operations(delta)
         logger.warning('+ операции')
     except Exception as e:
         logger.warning(f'- операции {str(e)}')
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     result = False
     try:
         logger.warning('> разбивка')
-        result = prepare()
+        result = prepare(delta)
         logger.warning('+ разбивка')
     except Exception as e:
         logger.warning(f'- разбивка {str(e)}')
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     if result:
         try:
             logger.warning('> sales')
-            sales()
+            sales(delta)
             logger.warning('+ sales')
         except Exception as e:
             logger.warning(f'- sales {str(e)}')

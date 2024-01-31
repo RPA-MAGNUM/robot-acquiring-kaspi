@@ -6,6 +6,7 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 import psycopg2
+from dateutil.relativedelta import relativedelta
 
 from config import logger, db_host, db_port, db_name, db_user, db_pass, months, \
     main_directory_folder, robot_name, str_date_working_file, str_parking_folder
@@ -64,7 +65,7 @@ def search_files(root_dir, keyword):
     return matching_files
 
 
-def dispatch():
+def dispatch(delta=0):
     print("Starting dispatcher")
 
     # logger.info("0) START table_create - простое создание таблицы в postgre")
@@ -83,10 +84,9 @@ def dispatch():
     operation_date = None
     folder_dates = None
 
-    today = datetime.datetime.now().date()
-    # today = datetime.datetime.strptime("12.07.2023", "%d.%m.%Y").date()
-    today_str = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today_str = "12.07.2023"
+    today = datetime.datetime.now().date() - relativedelta(days=delta)
+    today_str = today.strftime("%d.%m.%Y")
+
     for idx, row in enumerate(ws.iter_rows(min_row=1)):
 
         if isinstance(row[0].value, datetime.datetime):

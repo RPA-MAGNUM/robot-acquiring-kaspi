@@ -10,6 +10,7 @@ import openpyxl
 import pandas as pd
 import psycopg2
 import pyautogui
+from dateutil.relativedelta import relativedelta
 
 from config import logger, db_host, db_port, db_name, db_user, db_pass, ip_address, robot_name, smtp_author, \
     smtp_host, to_whom, cc_whom, robot_name_russian, str_date_working_file, temp_folder, str_path_mapping_excel_file, \
@@ -1003,6 +1004,7 @@ def split_branches(src_file, dst_dir):
     del branches
     del iter_data
 
+
 def prepare_upload_folder_for_one(file_full_path, split=False):
     # logger.info(f"Загружаем файл парковки: {file_full_path}")
     for filename in os.listdir(upload_folder):
@@ -1181,7 +1183,6 @@ def upload_sales_report_1c(process_date):
             print("Превышено максимальное время ожидания загрузки")
             return False
         # TODO decide how to handle this exception
-
     upload_time = datetime.datetime.now() - time_start
     print(f"Время загрузки {upload_time.seconds} секунд")
 
@@ -1281,73 +1282,72 @@ def upload_sales_report_1c(process_date):
                            "enabled_only": True, "found_index": 0}
 
     time.sleep(3)
-    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=600)
-    if not bottom_notification_appeared:
+    while True:
+        bottom_notification_appeared = app.wait_element(bottom_notification, timeout=300)
+        if bottom_notification_appeared:
+            text = app.find_element(bottom_notification).element.iface_value.CurrentValue
+            if "конфликт блокировок" in text:
+                logger.info("Конфликт блокировок")
+                app.find_element(bottom_notification).type_keys(app.keys.ESCAPE, click=True)
+            elif "Файл ранее загружен" in text:
+                logger.info("Файл уже загружен")
+                app.quit()
+                return temp_file_path
         app.find_element(upload_button).click()
-    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=1800)
-    if bottom_notification_appeared:
-        text = app.find_element(bottom_notification).element.iface_value.CurrentValue
-        if "конфликт блокировок" in text:
-            logger.info("Конфликт блокировок")
-        elif "Файл ранее загружен" in text:
-            logger.info("Файл уже загружен")
-            app.quit()
-            return True
     # *  Тут нужно ждать сообщение и через луп каждый раз нажимать
     # popup_message_selector = {"title": "", "class_name": "", "control_type": "Document", "visible_only": True,
     #                           "enabled_only": True, "found_index": 0}
-    registry_selector = {"title_re": ".*Документ отчет банка", "class_name": "", "control_type": "Custom",
-                         "visible_only": True, "enabled_only": True, "found_index": 3}
+    # registry_selector = {"title_re": ".*Документ отчет банка", "class_name": "", "control_type": "Custom",
+    #                      "visible_only": True, "enabled_only": True, "found_index": 3}
 
-    indeed_uploaded = False
-
-    # ? грузить пока ничего не останется
-    for i in range(6*60):
-        # * если блокировка жмем еще раз загрузить
-        text = app.find_element(bottom_notification).element.iface_value.CurrentValue
-        if "конфликт блокировок" in text:
-            logger.info("Конфликт блокировок")
-            logger.info(f"Загрузка {i + 2}")
-            app.find_element(upload_button).click()
-        # * если чбольше нечего грузить выход из цикла
-        indeed_uploaded = app.wait_element(registry_selector)
-        if not indeed_uploaded:
-            logger.info("Успешно загрузили Sales Report")
-            break
-        # * прожать загрузить если не было выхода из цикла
-        else:
-            logger.info(f"Загрузка {i + 2}")
-            app.find_element(upload_button).click()
-
-    acq_window_element.close()
-
-    if indeed_uploaded:
-        net_sum = get_net_sum(temp_file_path)
-        if not net_sum:
-            # TODO make screenshot
-            myScreenshot = pyautogui.screenshot()
-            screenshot_path = str(screenshots_folder.joinpath(
-                f"Сделано {datetime.datetime.now().strftime('%d.%m.%Y')} за процесс день {process_date}.png"))
-            myScreenshot.save(screenshot_path)
-            return False
-        print("end")
-        # ? Осталось только одно окно Дополнительные внешние обработки
-        app.quit()
-
-        return temp_file_path
-    else:
-        logger.info("Не смогли загрузить Sales Report 10 раз")
-        myScreenshot = pyautogui.screenshot()
-        screenshot_path = str(screenshots_folder.joinpath(
-            f"Сделано {datetime.datetime.now().strftime('%d.%m.%Y')} за процесс день {process_date}.png"))
-        myScreenshot.save(screenshot_path)
-        app.quit()
-        # logger.info(f"Сделали скриншот")
-        time.sleep(60 * 15)
-        send_message_by_smtp(body='Не смогли загрузить Sales Report', subject='Ошибка Sales Report',
-                             to=[to_whom, cc_whom], url=smtp_host, username=smtp_author,
-                             attachments=[Path(screenshot_path)])
-        raise BusinessException("Не смогли загрузить Sales Report", '')
+    # indeed_uploaded = False
+    #
+    # # ? грузить пока ничего не останется
+    # for i in range(6*60):
+    #     # * если блокировка жмем еще раз загрузить
+    #     text = app.find_element(bottom_notification).element.iface_value.CurrentValue
+    #     if "конфликт блокировок" in text:
+    #         logger.info("Конфликт блокировок")
+    #         logger.info(f"Загрузка {i + 2}")
+    #         app.find_element(upload_button).click()
+    #     # * если чбольше нечего грузить выход из цикла
+    #     indeed_uploaded = app.wait_element(registry_selector)
+    #     if not indeed_uploaded:
+    #         logger.info("Успешно загрузили Sales Report")
+    #         break
+    #     # * прожать загрузить если не было выхода из цикла
+    #     else:
+    #         logger.info(f"Загрузка {i + 2}")
+    #         app.find_element(upload_button).click()
+    #
+    # acq_window_element.close()
+    #
+    # if indeed_uploaded:
+    #     net_sum = get_net_sum(temp_file_path)
+    #     if not net_sum:
+    #         myScreenshot = pyautogui.screenshot()
+    #         screenshot_path = str(screenshots_folder.joinpath(
+    #             f"Сделано {datetime.datetime.now().strftime('%d.%m.%Y')} за процесс день {process_date}.png"))
+    #         myScreenshot.save(screenshot_path)
+    #         return False
+    #     print("end")
+    #     # ? Осталось только одно окно Дополнительные внешние обработки
+    #     app.quit()
+    #
+    #     return temp_file_path
+    # else:
+    #     logger.info("Не смогли загрузить Sales Report 10 раз")
+    #     myScreenshot = pyautogui.screenshot()
+    #     screenshot_path = str(screenshots_folder.joinpath(
+    #         f"Сделано {datetime.datetime.now().strftime('%d.%m.%Y')} за процесс день {process_date}.png"))
+    #     myScreenshot.save(screenshot_path)
+    #     app.quit()
+    #     # logger.info(f"Сделали скриншот")
+    #     time.sleep(60 * 15)
+    #     send_message_by_smtp(body='Не смогли загрузить Sales Report', subject='Ошибка Sales Report',
+    #                          to=[to_whom, cc_whom], url=smtp_host, username=smtp_author,
+    #                          attachments=[Path(screenshot_path)])
+    #     raise BusinessException("Не смогли загрузить Sales Report", '')
 
 
 def check_sales_report_vs_report_received(report_received, sales_report):
@@ -1496,25 +1496,27 @@ def perform():
         # elif isinstance(received_file, bool):
         #     logger.info("Не получили файл с 1с")
         #     return
-        res = check_sales_report_vs_report_received(received_file, sales_report)
-        if res:
-            # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
-            report_path = download_report(report_date=operation_date)
-            check_osv(report_path)
+        # res = check_sales_report_vs_report_received(received_file, sales_report)
+        # if res:
+        #     # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
+        #     report_path = download_report(report_date=operation_date)
+        #     check_osv(report_path)
 
-    notify_clients()
+    # notify_clients()
     logger.info(f'Загрузка и сверка завершена.\nЗавершение')
 
 
-def operations():
+def operations(delta=0):
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
 
     # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
     # operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
+
+    today = datetime.datetime.now().date() - relativedelta(days=delta)
+    today = today.strftime("%d.%m.%Y")
+
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
@@ -1568,14 +1570,16 @@ def operations():
             break
 
 
-def parking():
+def parking(delta=0):
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
     # operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
-    # today = "12.07.2023"
+
+    today = datetime.datetime.now().date() - relativedelta(days=delta)
+    today = today.strftime("%d.%m.%Y")
+
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
@@ -1597,12 +1601,16 @@ def parking():
     upload_parking_process()
 
 
-def prepare():
+def prepare(delta=0):
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     ws = wb['Каспи']
     operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
+
+    today = datetime.datetime.now().date() - relativedelta(days=delta)
+    today = today.strftime("%d.%m.%Y")
+
+    # today = "04.01.2024"
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
@@ -1651,12 +1659,15 @@ def prepare():
     return res
 
 
-def sales():
+def sales(delta=0):
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     ws = wb['Каспи']
     operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
+
+    today = datetime.datetime.now().date() - relativedelta(days=delta)
+    today = today.strftime("%d.%m.%Y")
+
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
         date_m = row[0].value
         if isinstance(date_m, datetime.datetime):
