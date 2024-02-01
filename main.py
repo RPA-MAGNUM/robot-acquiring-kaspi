@@ -3,7 +3,7 @@ from dispatcher import dispatch
 from performer import parking, operations, sales, prepare
 
 if __name__ == '__main__':
-    delta = 1
+    delta = 0
     try:
         logger.warning('> подготовка')
         dispatch(delta)
