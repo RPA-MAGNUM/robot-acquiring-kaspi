@@ -135,7 +135,7 @@ class Transaction:
 
         error_notification = app.wait_element(
             {"title": "", "class_name": "", "control_type": "Document", "visible_only": True, "enabled_only": True,
-             "found_index": 0}, timeout=3)
+             "found_index": 0, "parent": app.root}, timeout=3)
         if error_notification:
             comment = "Документ только для чтения"
             self.comments = comment
@@ -266,7 +266,7 @@ class Transaction:
 
         error_notification = app.wait_element(
             {"title": "", "class_name": "", "control_type": "Document", "visible_only": True, "enabled_only": True,
-             "found_index": 0}, timeout=3)
+             "found_index": 0, "parent": app.root}, timeout=3)
         if error_notification:
             comment = "Документ только для чтения"
             self.comments = comment
@@ -361,7 +361,7 @@ class Transaction:
         }).type_keys(app.keys.END, app.keys.F9, click=True, clear=False, protect_first=False)
         if app.wait_element({
             "title": "", "class_name": "", "control_type": "Document",
-            "visible_only": True, "enabled_only": True, "found_index": 0
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
         }, timeout=3):
             comment = "Документ только для чтения"
             self.comments = comment
@@ -773,193 +773,171 @@ def check_sales_report(excel_file_path: str):
 
 
 @retry_n_times(3)
-def upload_parking(search_date, process_date):
+def upload_parking(search_date, process_date, aquir=True, real=True):
     print(upload_folder)
     app = Odines()
     app.run()
-    app.navigate("Сервис", "Внешние печатные формы, отчеты и обработки", "Внешние обработки")
-    prepare_button = {"title": "Подготовить данные для загрузки", "class_name": "", "control_type": "Button",
-                      "visible_only": True, "enabled_only": True, "found_index": 0}
-    upload_button = {"title": "Выполнить загрузку", "class_name": "", "control_type": "Button", "visible_only": True,
-                     "enabled_only": True, "found_index": 0}
-    parking_checkbox_selector = {"title": "Отражение операций по услуге Парковка", "class_name": "",
-                                 "control_type": "CheckBox", "visible_only": True, "enabled_only": True,
-                                 "found_index": 0}
-    service_checkbox_selector = {"title": "Отражение операций по реализации Услуг", "class_name": "",
-                                 "control_type": "CheckBox", "visible_only": True, "enabled_only": True,
-                                 "found_index": 0}
 
-    app.find_element(
-        {"title_re": "^Загрузка эквайринговых операций.* Наименование", "class_name": "", "control_type": "Custom",
-         "visible_only": True, "enabled_only": True, "found_index": 0}).click(double=True)
+    # ? навигация
+    app.navigate(
+        "Сервис",
+        "Внешние печатные формы, отчеты и обработки",
+        "Внешние обработки"
+    )
+    app.find_element({
+        "title_re": "^Загрузка эквайринговых операций.* Наименование", "class_name": "", "control_type": "Custom",
+        "visible_only": True, "enabled_only": True, "found_index": 0
+    }).click(double=True)
+    app.parent_switch(app.find_element({
+        "title": "Загрузка эквайринговых операций", "class_name": "", "control_type": "Text",
+        "visible_only": True, "enabled_only": True, "found_index": 0
+    }).parent(4))
 
-    acq_window_selector = {"title": "Загрузка эквайринговых операций", "class_name": "", "control_type": "Text",
-                           "visible_only": True, "enabled_only": True, "found_index": 0}
-    acq_window = app.wait_element(acq_window_selector, timeout=10)
-    if not acq_window:
-        msg = "Окно Обработка Загрузка эквайринговых операций не открылось"
-        print(msg)
-        raise Exception(msg)
-    acq_window_element = app.find_element(acq_window_selector)
-    # * Taking the 4th parent, which means the whole window
-    acq_window_element = acq_window_element.parent(4)
-    acq_window_element.draw_outline()
-    time.sleep(3)
-    app.parent_switch(acq_window_element, maximize=True)
-    date_field = {"title": "", "class_name": "", "control_type": "Edit", "visible_only": True, "enabled_only": True,
-                  "found_index": 1}
+    if aquir:
+        # ? дата
+        app.find_element({
+            "title": "", "class_name": "", "control_type": "Edit",
+            "visible_only": True, "enabled_only": True, "found_index": 1
+        }).type_keys(process_date, app.keys.TAB, click=True, clear=True)
 
-    choose_catalog_field = {"title": "", "class_name": "", "control_type": "Edit", "visible_only": True,
-                            "enabled_only": True, "found_index": 0}
+        # ? чекбокс парковка
+        if not app.find_element({
+            "title": "Отражение операций по услуге Парковка", "class_name": "", "control_type": "CheckBox",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).element.iface_toggle.CurrentToggleState:
+            app.find_element({
+                "title": "Отражение операций по услуге Парковка", "class_name": "", "control_type": "CheckBox",
+                "visible_only": True, "enabled_only": True, "found_index": 0
+            }).click()
 
-    app.find_element(date_field).click()
+        # ? файлы
+        app.find_element({
+            "title": "", "class_name": "", "control_type": "Edit",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).type_keys("^+{F4}", click=True, clear=True)
+        app.find_element({
+            "title": "Папка:", "class_name": "Edit", "control_type": "Edit",
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": None
+        }).type_keys(upload_folder.__str__(), app.keys.ENTER, clear=True, click=True, protect_first=True)
+        app.find_element({
+            "title": "Выбор папки", "class_name": "Button", "control_type": "Button",
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": None
+        }).click()
 
-    app.find_element(date_field).type_keys(process_date, app.keys.TAB, protect_first=True, click=True, clear=True)
+        # ? подготовка
+        app.find_element({
+            "title": "Подготовить данные для загрузки", "class_name": "", "control_type": "Button",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).click()
+        print('start while 100% Подготовить данные для загрузки')
+        while '100%' not in app.find_element({
+            "title": "", "class_name": "", "control_type": "ProgressBar",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).element.iface_value.CurrentValue:
+            time.sleep(1)
 
-    app.find_element(choose_catalog_field).click()
-    app.find_element(choose_catalog_field).type_keys("^+{F4}", protect_first=False, click=True, clear=True)
-    time.sleep(5)
-    app.parent_back(10)
-    select_field = {"title": "Папка:", "class_name": "Edit", "control_type": "Edit", "visible_only": True,
-                    "enabled_only": True, "found_index": 0}
-    path__ = str(upload_folder)
-    app.find_element(select_field).type_keys(path__, app.keys.ENTER, clear=True, click=True, protect_first=True)
-    app.find_element({"title": "Выбор папки", "class_name": "Button", "control_type": "Button", "visible_only": True,
-                      "enabled_only": True, "found_index": 0}).click()
+        flag = app.wait_element({
+            "title": "", "class_name": "", "control_type": "Document",
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+        }, timeout=10)
+        print('Document', flag)
+        if flag:
+            text = app.find_element({
+                "title": "", "class_name": "", "control_type": "Document",
+                "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+            }).element.iface_value.CurrentValue
+            if 'Загрузка прервана' in text:
+                print(text)
+                app.quit()
+                return False
 
-    app.find_element(parking_checkbox_selector).click()
+        # ? загрузка
+        app.find_element({
+            "title": "Выполнить загрузку", "class_name": "", "control_type": "Button",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).click()
+        if app.wait_element({
+            "title": "Внимание Внимание", "class_name": "V8ConfirmationWindow", "control_type": "ToolTip",
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+        }, timeout=10):
+            raise Exception('ОШИБКА пустые поля при загрузке')
+        print('start while Выполнить загрузку')
+        while True:
+            if not app.wait_element({
+                "title_re": "Отчет банка по эквайрингу.*Документ отчет банка", "class_name": "", "control_type": "Custom",
+                "visible_only": True, "enabled_only": True, "found_index": 0
+            }, timeout=300):
+                app.find_element({
+                    "title": "Выполнить загрузку", "class_name": "", "control_type": "Button",
+                    "visible_only": True, "enabled_only": True, "found_index": 0
+                }).click()
+                continue
+            break
 
-    time_start = datetime.datetime.now()
-    app.find_element(prepare_button).click()
-    # * Ждать пока загрузит, примерно 30 min
-    progress_bar_selector = {"title": "", "class_name": "", "control_type": "ProgressBar", "visible_only": True,
-                             "enabled_only": True, "found_index": 0}
-    count_iter = 0
-    while True:
-        bool_progress_bar = app.wait_element(progress_bar_selector)
-        if bool_progress_bar:
-            el = app.find_element(progress_bar_selector)
-            value = el.element.iface_value.CurrentValue
+    if real:
+        # ? галочка парковка снять
+        if app.find_element({
+            "title": "Отражение операций по услуге Парковка", "class_name": "", "control_type": "CheckBox",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).element.iface_toggle.CurrentToggleState:
+            app.find_element({
+                "title": "Отражение операций по услуге Парковка", "class_name": "", "control_type": "CheckBox",
+                "visible_only": True, "enabled_only": True, "found_index": 0
+            }).click()
 
-            if value and "100%" in value:
-                break
-        time.sleep(60)
-        count_iter += 1
-        if count_iter > 180:
-            print("Превышено максимальное время ожидания загрузки")
-            return False
-        # TODO decide how to handle this exception
+        # ? пропись даты реализации (дата папки)
+        app.find_element({
+            "title": "", "class_name": "", "control_type": "Edit",
+            "visible_only": True, "enabled_only": True, "found_index": 1
+        }).type_keys(search_date, app.keys.TAB, protect_first=True, click=True, clear=True)
 
-    upload_time = datetime.datetime.now() - time_start
-    # logger.info("Clicking upload button")
-    app.find_element(upload_button).click()
-    print(f"Время загрузки Отражение операций по услуге Парковка {upload_time.seconds} секунд")
+        # ? галочка реализация
+        if not app.find_element({
+            "title": "Отражение операций по реализации Услуг", "class_name": "", "control_type": "CheckBox",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).element.iface_toggle.CurrentToggleState:
+            app.find_element({
+                "title": "Отражение операций по реализации Услуг", "class_name": "", "control_type": "CheckBox",
+                "visible_only": True, "enabled_only": True, "found_index": 0
+            }).click()
 
-    # Waiting notification about conflict
-    bottom_notification = {"title": "", "class_name": "", "control_type": "Document", "visible_only": True,
-                           "enabled_only": True, "found_index": 0}
-    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=60)
-    if bottom_notification_appeared:
-        text = app.find_element(bottom_notification).element.iface_value.CurrentValue
-        if "конфликт блокировок" in text:
-            logger.info("Конфликт блокировок")
-            for i in range(5):
-                app.find_element(upload_button).click()
-                bottom_notification_appeared = app.wait_element(bottom_notification, timeout=60)
-                if not bottom_notification_appeared:
-                    logger.info("Смогли загрузить парковку Паркинг")
-                    break
-            else:
-                # send email
-                logger.info("Не смогли загрузить парковку Паркинг")
-        elif "Файл ранее загружен" in text:
-            logger.info("Файл уже загружен")
-            app.quit()
-            return True
-
-    operations_parking_selector = {"title": "Операции по услуге Парковка", "class_name": "", "control_type": "TabItem",
-                                   "visible_only": True, "enabled_only": True, "found_index": 0}
-
-    app.find_element(operations_parking_selector).click()
-
-    uploaded_parking = app.wait_element(
-        {"title": "1 N", "class_name": "", "control_type": "Custom", "visible_only": True, "enabled_only": True,
-         "found_index": 0}, timeout=5)
-    if not uploaded_parking:
-        logger.info("Не удалось загрузить парковки, так как таблица пустая")
-    else:
-        # logger.info("Парковка загрузилась")
-        pass
-    # logger.info('Загружаем Теперь отражение реализации')
-
-    # ___________________________________Отражение реализации
-    app.find_element(parking_checkbox_selector).click()
-    app.find_element(service_checkbox_selector).click()
-
-    app.find_element(date_field).type_keys(search_date, app.keys.TAB, protect_first=True, click=True,
-                                           clear=True)
-
-    # * Clients say that we do not need to prepare the data
-    # time_start = datetime.datetime.now()
-    # app.find_element(prepare_button).click()
-    # # * Ждать пока загрузит, примерно 30 min
-    # progress_bar_selector = {"title": "", "class_name": "", "control_type": "ProgressBar", "visible_only": True,
-    #                          "enabled_only": True, "found_index": 0}
-    # count_iter = 0
-    # while True:
-    #     bool_progress_bar = app.wait_element(progress_bar_selector, timeout=180)
-    #     if bool_progress_bar:
-    #         el = app.find_element(progress_bar_selector)
-    #         value = el.element.iface_value.CurrentValue
-    #
-    #         if value and "100%" in value:
-    #             break
-    #     time.sleep(10)
-    #     count_iter += 1
-    #     if count_iter == int(upload_timeout_minutes) * 6:
-    #         print("Превышено максимальное время ожидания загрузки")
-    #         return False
-    #     # TODO decide how to handle this exception
-    #
-    # upload_time = datetime.datetime.now() - time_start
-    # logger.info("Clicking upload button")
-    app.find_element(upload_button).click()
-    print(f"Время загрузки Отражение операций по реализации Услуг {upload_time.seconds} секунд")
-    bottom_notification_appeared = app.wait_element(bottom_notification, timeout=60)
-    if bottom_notification_appeared:
-        text = app.find_element(bottom_notification).element.iface_value.CurrentValue
-        if "конфликт блокировок" in text:
-            logger.info("Конфликт блокировок")
-            for i in range(5):
-                app.find_element(upload_button).click()
-                bottom_notification_appeared = app.wait_element(bottom_notification, timeout=60)
-                if not bottom_notification_appeared:
-                    logger.info("Смогли загрузить парковку Паркинг")
-                    break
-            else:
-                # send email
-                logger.info("Не смогли загрузить парковку Паркинг")
-        elif "Файл ранее загружен" in text:
-            logger.info("Файл уже загружен")
-            app.quit()
-            return True
-
-    app.find_element(
-        {"title": "Реестр созданных документов", "class_name": "", "control_type": "TabItem", "visible_only": True,
-         "enabled_only": True, "found_index": 0}).click()
-
-    bool_real_uploaded = app.wait_element(
-        {"title_re": "Реализация ТМЗ и услуг .* Документ отчет банка", "class_name": "", "control_type": "Custom",
-         "visible_only": True, "enabled_only": True, "found_index": 0}, timeout=10)
-    if bool_real_uploaded:
-        # logger.info("Парковка: Реализация загрузилась")
-        pass
-    else:
-        logger.info("Парковка: Реализация НЕ загрузилась")
-        app.quit()
-        return False
+        # ? выполнение загрузки
+        app.find_element({
+            "title": "Выполнить загрузку", "class_name": "", "control_type": "Button",
+            "visible_only": True, "enabled_only": True, "found_index": 0
+        }).click()
+        if app.wait_element({
+            "title": "Внимание Внимание", "class_name": "V8ConfirmationWindow", "control_type": "ToolTip",
+            "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+        }, timeout=10):
+            raise Exception('ОШИБКА пустые поля при загрузке')
+        print('start while Выполнить загрузку')
+        while True:
+            if app.wait_element({
+                "title": "", "class_name": "", "control_type": "Document",
+                "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+            }, timeout=10):
+                if 'конфликт блокировок' in app.find_element({
+                    "title": "", "class_name": "", "control_type": "Document",
+                    "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+                }).element.iface_value.CurrentValue:
+                    print('конфликт блокировок')
+                    app.find_element({
+                        "title": "", "class_name": "", "control_type": "Document",
+                        "visible_only": True, "enabled_only": True, "found_index": 0, "parent": app.root
+                    }).type_keys(app.keys.ESCAPE, click=True)
+            if not app.wait_element({
+                "title_re": "Реализация ТМЗ и услуг .* Документ отчет банка", "class_name": "",
+                "control_type": "Custom",
+                "visible_only": True, "enabled_only": True, "found_index": 0
+            }, timeout=300):
+                app.find_element({
+                    "title": "Выполнить загрузку", "class_name": "", "control_type": "Button",
+                    "visible_only": True, "enabled_only": True, "found_index": 0
+                }).click()
+                continue
+            break
     app.quit()
-
     return True
 
 
@@ -1029,6 +1007,7 @@ def prepare_upload_folder_for_one(file_full_path, split=False):
         # logger.info("Файл был скопирован в папку для загрузки")
         return True
     except Exception as ex:
+        traceback.print_exc()
         logger.info(f"Ошибка при копировании файла из {file_full_path} в папку {dst_file_path} {ex}")
         return False
 
@@ -1044,7 +1023,7 @@ def update_status_parking(status, retry_count, parking_id, error_message=None, c
     conn.close()
 
 
-def upload_parking_process():
+def upload_parking_process(aquir=True, real=True):
     while True:
         select_one_query = f"""SELECT * FROM ROBOT.{robot_name.replace('-', '_')}_parking where (executor_name is NULL OR executor_name = '{ip_address}')
                  AND status IN ('New','Retried')  ORDER BY RANDOM();"""
@@ -1077,7 +1056,7 @@ def upload_parking_process():
                 # * MAIN PARKING 1c FUNCTION
 
                 # logger.info('Загрузка', row[10], row[9])
-                result = upload_parking(row[10], row[9])
+                result = upload_parking(row[10], row[9], aquir=aquir, real=real)
 
                 if not result:
                     status = 'Fail'
@@ -1277,9 +1256,10 @@ def upload_sales_report_1c(process_date):
     # logger.info("Clicking upload button 1c sales")
     # logger.info("!!!! НАЖАЛИ НА ВЫПОЛНИТЬ ЗАГРУЗКУ, ЖДУ КОНФЛИКТА БЛОКИРОВОК")
     app.find_element(upload_button).click()
+    # input('-----')
 
     bottom_notification = {"title": "", "class_name": "", "control_type": "Document", "visible_only": True,
-                           "enabled_only": True, "found_index": 0}
+                           "enabled_only": True, "found_index": 0, "parent": app.root}
 
     time.sleep(3)
     while True:
@@ -1296,7 +1276,7 @@ def upload_sales_report_1c(process_date):
         app.find_element(upload_button).click()
     # *  Тут нужно ждать сообщение и через луп каждый раз нажимать
     # popup_message_selector = {"title": "", "class_name": "", "control_type": "Document", "visible_only": True,
-    #                           "enabled_only": True, "found_index": 0}
+    #                           "enabled_only": True, "found_index": 0, "parent": app.root}
     # registry_selector = {"title_re": ".*Документ отчет банка", "class_name": "", "control_type": "Custom",
     #                      "visible_only": True, "enabled_only": True, "found_index": 3}
 
@@ -1472,7 +1452,7 @@ def perform():
     # * проверка пустых
     # check_sales_report(sales_report)
     # Step 5: В сохраненном файле нужно проверить точки продаж на наличие открытия новых
-    check_sales_report_for_new_branches(sales_report)
+    # check_sales_report_for_new_branches(sales_report)
 
     # Step 6: Далее загружаем Sales Report в Обработку эквайринговых операций. Указываем дату выписки, путь,
     # где расположен файл. Нажимаем Подготовить данные для загрузки
@@ -1570,7 +1550,7 @@ def operations(delta=0):
             break
 
 
-def parking(delta=0):
+def parking(delta=0, aquir=True, real=True):
     # * Reading the daily execution schedule
     wb = openpyxl.load_workbook(str_date_working_file, data_only=True)
     # Step 1: Определить рабочий день-----------------
@@ -1598,7 +1578,7 @@ def parking(delta=0):
         print(f"Operation_date: {operation_date}")
     wb.close()
 
-    upload_parking_process()
+    upload_parking_process(aquir=aquir, real=real)
 
 
 def prepare(delta=0):
@@ -1649,7 +1629,7 @@ def prepare(delta=0):
             break
 
     # * проверка пустых
-    check_sales_report_for_new_branches(sales_report)
+    # check_sales_report_for_new_branches(sales_report)
     if not sales_file_found:
         logger.info(f"Sales report за {operation_date} не найдена")
         return
@@ -1716,14 +1696,14 @@ def sales(delta=0):
     if not received_file:
         logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
         return
-    # elif isinstance(received_file, bool):
-    #     logger.info("Не получили файл с 1с")
-    #     return
-    res = check_sales_report_vs_report_received(received_file, sales_report)
-    if res:
-        # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
-        report_path = download_report(report_date=operation_date)
-        check_osv(report_path)
+    # # elif isinstance(received_file, bool):
+    # #     logger.info("Не получили файл с 1с")
+    # #     return
+    # res = check_sales_report_vs_report_received(received_file, sales_report)
+    # if res:
+    #     # step 8: После выполнения загрузки нужно проверить ОСВ по счет.
+    #     report_path = download_report(report_date=operation_date)
+    #     check_osv(report_path)
 
     notify_clients()
 

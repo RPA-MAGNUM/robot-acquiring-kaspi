@@ -92,7 +92,7 @@ class Builder:
 if __name__ == '__main__':
     sys.path.append(root_path.joinpath('venv\\Scripts').__str__())
     builder = Builder()
-    builder.upd_metadata(major=False, minor=False, micro=False)
+    builder.upd_metadata(major=False, minor=False, micro=True)
     builder.build_dir.mkdir(exist_ok=True, parents=True)
     copy(root_path.joinpath('app.ico').__str__(), builder.build_dir.joinpath('app.ico').__str__())
     command_ = [
