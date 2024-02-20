@@ -6,45 +6,13 @@ from performer import parking, operations, sales, prepare
 
 if __name__ == '__main__':
     delta = 0
-    try:
-        logger.warning('> подготовка')
-        dispatch(delta)
-        logger.warning('+ подготовка')
-    except Exception as e:
-        traceback.print_exc()
-        logger.warning(f'- подготовка {str(e)}')
+    result = False
+
 
     try:
-        logger.warning('> парковка')
-        parking(delta)
-        logger.warning('+ парковка')
+        logger.warning('> операции')
+        operations(delta)
+        logger.warning('+ операции')
     except Exception as e:
-        traceback.print_exc()
-        logger.warning(f'- парковка {str(e)}')
-
-    # try:
-    #     logger.warning('> операции')
-    #     operations(delta)
-    #     logger.warning('+ операции')
-    # except Exception as e:
-    #     traceback.print_exc()
-    #     logger.warning(f'- операции {str(e)}')
-    #     logger.exception()
-    #
-    # result = False
-    # try:
-    #     logger.warning('> разбивка')
-    #     result = prepare(delta)
-    #     logger.warning('+ разбивка')
-    # except Exception as e:
-    #     traceback.print_exc()
-    #     logger.warning(f'- разбивка {str(e)}')
-    #
-    # if result:
-    #     try:
-    #         logger.warning('> sales')
-    #         sales(delta)
-    #         logger.warning('+ sales')
-    #     except Exception as e:
-    #         traceback.print_exc()
-    #         logger.warning(f'- sales {str(e)}')
+        logger.warning(f'- операции {str(e)}')
+        logger.exception()
