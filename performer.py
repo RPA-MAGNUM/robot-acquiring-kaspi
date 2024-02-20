@@ -171,7 +171,8 @@ class Transaction:
             if app.wait_element(ok_button_selector, until=False):
                 break
             if app.wait_element(
-                    {"title_re": "Конфликт блокировок.*", "class_name": "", "control_type": "Pane", "visible_only": True,
+                    {"title_re": "Конфликт блокировок.*", "class_name": "", "control_type": "Pane",
+                     "visible_only": True,
                      "enabled_only": True, "found_index": 0}, timeout=3):
                 logger.info("Конфлик блокировок")
                 if try_count < 0:
@@ -286,21 +287,22 @@ class Transaction:
                                                            protect_first=True,
                                                            click=True, clear=True)
 
-        # TODO turn on later
-        try:
-            app.find_element(ok_button_selector).click()
-        except (Exception,):
-            logger.info("Не удалось провести документ, возможно он только для чтения")
-
+        app.find_element(ok_button_selector).click()
         # * Конфликт блокировок нужно чекнуть
-        if app.wait_element(
-                {"title_re": "Конфликт блокировок.*", "class_name": "", "control_type": "Pane", "visible_only": True,
-                 "enabled_only": True, "found_index": 0}, timeout=3):
-            logger.info("Конфлик блокировок")
-            self.error_message = "Конфикт блокировок"
-            app.quit()
-            raise BusinessException("Не присвоен номер Конфликт блокировок", "Исходщие")
-
+        try_count = 30
+        while True:
+            try_count -= 1
+            if app.wait_element(ok_button_selector, until=False):
+                break
+            if app.wait_element(
+                    {"title_re": "Конфликт блокировок.*", "class_name": "", "control_type": "Pane",
+                     "visible_only": True,
+                     "enabled_only": True, "found_index": 0}, timeout=3):
+                logger.info("Конфлик блокировок")
+                if try_count < 0:
+                    self.error_message = "Конфикт блокировок"
+                    app.quit()
+                    raise BusinessException("Не присвоен номер Конфликт блокировок", "Исходщие")
         app.quit()
         return True
 
@@ -402,20 +404,25 @@ class Transaction:
 
         # ? approve
         app.check_1c_error('Ошибки при заполнении')
-        app.find_element({
-            "title": "ОК", "class_name": "", "control_type": "Button",
-            "visible_only": True, "enabled_only": True, "found_index": 0
-        }).click()
+
+        ok_button_selector = {"title": "ОК", "class_name": "", "control_type": "Button", "visible_only": True,
+                              "enabled_only": True, "found_index": 0}
+        app.find_element(ok_button_selector).click()
         # * Конфликт блокировок нужно чекнуть
-        if not app.wait_element({
-            "title": "ОК", "class_name": "", "control_type": "Button",
-            "visible_only": True, "enabled_only": True, "found_index": 0
-        }, timeout=30, until=False):
-            app.close_1c_error()
-            app.quit()
-            self.error_message = 'Ошибка при проведении'
-            logger.warning(self.error_message)
-            return False
+        try_count = 30
+        while True:
+            try_count -= 1
+            if app.wait_element(ok_button_selector, until=False):
+                break
+            if app.wait_element(
+                    {"title_re": "Конфликт блокировок.*", "class_name": "", "control_type": "Pane",
+                     "visible_only": True,
+                     "enabled_only": True, "found_index": 0}, timeout=3):
+                logger.info("Конфлик блокировок")
+                if try_count < 0:
+                    self.error_message = "Конфикт блокировок"
+                    app.quit()
+                    raise BusinessException("Не присвоен номер Конфликт блокировок", "Исходщие")
         app.quit()
         return True
 
@@ -864,7 +871,8 @@ def upload_parking(search_date, process_date, aquir=True, real=True):
         print('start while Выполнить загрузку')
         while True:
             if not app.wait_element({
-                "title_re": "Отчет банка по эквайрингу.*Документ отчет банка", "class_name": "", "control_type": "Custom",
+                "title_re": "Отчет банка по эквайрингу.*Документ отчет банка", "class_name": "",
+                "control_type": "Custom",
                 "visible_only": True, "enabled_only": True, "found_index": 0
             }, timeout=300):
                 app.find_element({
@@ -974,7 +982,7 @@ def split_branches(src_file, dst_dir):
         [new_ws.append(r) for r in branches[branch]]
         new_wb.save(dst_dir.joinpath(f'{src_file.stem}_{n}{src_file.suffix}'))
         new_wb.close()
-        print(n+1, 'from', iter_len)
+        print(n + 1, 'from', iter_len)
     wb.close()
     del wb
     del ws
@@ -1445,7 +1453,7 @@ def perform():
         print(sales_report)
         if not sales_file_found:
             logger.warning(f'не найден sales report от {operation_date}, ожидание 15мин')
-            time.sleep(60*15)
+            time.sleep(60 * 15)
         else:
             break
 
@@ -1468,7 +1476,7 @@ def perform():
                 received_file = upload_sales_report_1c(process_date=operation_date)
                 break
             except (Exception,):
-                time.sleep(60*15)
+                time.sleep(60 * 15)
 
         if not received_file:
             logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
@@ -1624,7 +1632,7 @@ def prepare(delta=0):
         print(sales_report)
         if not sales_file_found:
             logger.warning(f'не найден sales report от {operation_date}, ожидание 15мин')
-            time.sleep(60*15)
+            time.sleep(60 * 15)
         else:
             break
 
@@ -1681,7 +1689,7 @@ def sales(delta=0):
         print(sales_report)
         if not sales_file_found:
             logger.warning(f'не найден sales report от {operation_date}, ожидание 15мин')
-            time.sleep(60*15)
+            time.sleep(60 * 15)
         else:
             break
 
@@ -1691,7 +1699,7 @@ def sales(delta=0):
             received_file = upload_sales_report_1c(process_date=operation_date)
             break
         except (Exception,):
-            time.sleep(60*15)
+            time.sleep(60 * 15)
 
     if not received_file:
         logger.info("Попробовали загрузить в 1с 3 раза. Но не получилось. Закончили работу")
