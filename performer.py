@@ -4,7 +4,6 @@ import shutil
 import time
 import traceback
 from pathlib import Path
-# from subprocess import Popen
 
 import openpyxl
 import pandas as pd
@@ -15,10 +14,13 @@ from dateutil.relativedelta import relativedelta
 from config import logger, db_host, db_port, db_name, db_user, db_pass, ip_address, robot_name, smtp_author, \
     smtp_host, to_whom, cc_whom, robot_name_russian, str_date_working_file, temp_folder, str_path_mapping_excel_file, \
     upload_folder, months, str_sales_folder, \
-    screenshots_folder, transaction_retry_count, owa_username
+    transaction_retry_count, owa_username
 from core import Odines, Cursor
 from rpamini import send_message_by_smtp, try_except_decorator, clipboard_set, clipboard_get, BusinessException, \
-    check_file_downloaded, fix_excel_file_error, retry_n_times, kill_process_list
+    check_file_downloaded, fix_excel_file_error, retry_n_times, kill_process_list, fix_xls_format_to_xlsx
+
+
+# from subprocess import Popen
 
 
 class Transaction:
@@ -958,6 +960,7 @@ def split_branches(src_file, dst_dir):
 
     src_file = Path(src_file)
     dst_dir = Path(dst_dir)
+    fix_xls_format_to_xlsx(src_file)
     wb = load_workbook(src_file.__str__())
     ws = wb.active
     vs = list(ws.values)
