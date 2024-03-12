@@ -8,11 +8,17 @@ if __name__ == '__main__':
     delta = 0
     result = False
 
-
     try:
-        logger.warning('> операции')
-        operations(delta)
-        logger.warning('+ операции')
+        logger.warning('> разбивка')
+        result = prepare(delta)
+        logger.warning('+ разбивка')
     except Exception as e:
-        logger.warning(f'- операции {str(e)}')
-        logger.exception()
+        logger.warning(f'- разбивка {str(e)}')
+
+    if result:
+        try:
+            logger.warning('> sales')
+            sales(delta)
+            logger.warning('+ sales')
+        except Exception as e:
+            logger.warning(f'- sales {str(e)}')

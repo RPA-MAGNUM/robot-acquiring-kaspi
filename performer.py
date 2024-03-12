@@ -1628,6 +1628,8 @@ def prepare(delta=0):
     sales_file_found = False
     for i in range(10):
         for sale_file in os.listdir(str(sales_report)):
+            if '~$' in str(sale_file):
+                continue
             if operation_date in sale_file:
                 sales_report = sales_report.joinpath(sale_file)
                 sales_file_found = True
