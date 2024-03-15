@@ -4,6 +4,7 @@ import shutil
 import time
 import traceback
 from pathlib import Path
+from subprocess import Popen
 
 import openpyxl
 import pandas as pd
@@ -1013,8 +1014,8 @@ def prepare_upload_folder_for_one(file_full_path, split=False):
         if not split:
             shutil.copy(file_full_path, dst_file_path)
         else:
-            split_branches(file_full_path, upload_folder)
-            # Popen(['split_branches.exe', file_full_path.__str__(), upload_folder.__str__()]).wait()
+            # split_branches(file_full_path, upload_folder)
+            Popen(['split_branches.exe', file_full_path.__str__(), upload_folder.__str__()]).wait()
         # logger.info("Файл был скопирован в папку для загрузки")
         return True
     except Exception as ex:

@@ -204,7 +204,8 @@ def dispatch(delta=0):
     # Step 1: Определить рабочий день-----------------
     ws = wb['Каспи']
     operation_date = None
-    today = datetime.datetime.now().strftime("%d.%m.%Y")
+    today = datetime.datetime.now() - relativedelta(days=delta)
+    today = today.strftime("%d.%m.%Y")
     # today = "02.10.2023"
 
     for idx, row in enumerate(ws.iter_rows(min_row=0)):
