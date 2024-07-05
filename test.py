@@ -5,7 +5,7 @@ from dispatcher import dispatch
 from performer import parking, operations, sales, prepare
 
 if __name__ == '__main__':
-    delta = 0
+    delta = 1
     result = False
 
     try:

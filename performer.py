@@ -960,8 +960,11 @@ def split_branches(src_file, dst_dir):
     from openpyxl.workbook import Workbook
 
     src_file = Path(src_file)
+    src_file_ = Path.home().joinpath(src_file.name)
+    shutil.copy(src_file, src_file_)
+    src_file = src_file_
     dst_dir = Path(dst_dir)
-    fix_xls_format_to_xlsx(src_file)
+    fix_xls_format_to_xlsx(src_file.__str__())
     wb = load_workbook(src_file.__str__())
     ws = wb.active
     vs = list(ws.values)
