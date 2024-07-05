@@ -326,23 +326,24 @@ class Transaction:
             "visible_only": True, "enabled_only": True, "found_index": 0
         }, resize=True)
         # * для перевода и оплаты техно
-        if not app.find_element({
-            "title": "Контрагент", "class_name": "", "control_type": "CheckBox",
-            "visible_only": True, "enabled_only": True, "found_index": 0
-        }).element.iface_toggle.CurrentToggleState:
-            app.find_element({
+        if list_of_demand[1]:
+            if not app.find_element({
                 "title": "Контрагент", "class_name": "", "control_type": "CheckBox",
                 "visible_only": True, "enabled_only": True, "found_index": 0
-            }).click()
-        app.find_element({
-            "title": "", "class_name": "", "control_type": "Edit",
-            "visible_only": True, "enabled_only": True, "found_index": 17
-        }).type_keys(list_of_demand[1], app.keys.TAB, protect_first=True, click=True)
+            }).element.iface_toggle.CurrentToggleState:
+                app.find_element({
+                    "title": "Контрагент", "class_name": "", "control_type": "CheckBox",
+                    "visible_only": True, "enabled_only": True, "found_index": 0
+                }).click()
+            app.find_element({
+                "title": "", "class_name": "", "control_type": "Edit",
+                "visible_only": True, "enabled_only": True, "found_index": 21
+            }).type_keys(list_of_demand[1], app.keys.TAB, protect_first=True, click=True)
         # * для перевода
         if len(list_of_demand) == 4:
             app.find_element({
                 "title": "", "class_name": "", "control_type": "Edit",
-                "visible_only": True, "enabled_only": True, "found_index": 29
+                "visible_only": True, "enabled_only": True, "found_index": 33
             }).type_keys(list_of_demand[3], app.keys.TAB, protect_first=True, click=True)
         app.find_element({
             "title": "OK", "class_name": "", "control_type": "Button",
