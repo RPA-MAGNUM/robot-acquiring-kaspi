@@ -343,6 +343,10 @@ class Transaction:
         if len(list_of_demand) == 4:
             app.find_element({
                 "title": "", "class_name": "", "control_type": "Edit",
+                "visible_only": True, "enabled_only": True, "found_index": 15
+            }).type_keys('Перевод на другой счет организации', app.keys.TAB, protect_first=True, click=True)
+            app.find_element({
+                "title": "", "class_name": "", "control_type": "Edit",
                 "visible_only": True, "enabled_only": True, "found_index": 33
             }).type_keys(list_of_demand[3], app.keys.TAB, protect_first=True, click=True)
         app.find_element({
