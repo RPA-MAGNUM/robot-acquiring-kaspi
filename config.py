@@ -64,7 +64,20 @@ temp_folder = local_path.joinpath(f".agent\\{robot_name}\\temp")
 temp_folder.mkdir(exist_ok=True, parents=True)
 
 config_path = global_path.joinpath(f'.agent\\{robot_name}\\{get_hostname()}\\config.json')
-
+if not config_path.is_file():
+    json_write(config_path, {
+        "delta": 0,
+        "delta_example": "delta=1 это -1 день, delta=2 это -2 дня",
+        "cc_whom": "AkhmetovaN@magnum.kz;Mukhtarova@magnum.kz",
+        "common_network_folder": "\\\\vault.magnum.local\\Common\\Stuff\\_06_Бухгалтерия\\Банк для сверки безнала\\",
+        "main_directory_folder": "\\\\vault.magnum.local\\Common\\Stuff\\_06_Бухгалтерия\\Выписки\\ВЫПИСКИ  KASPI БАНКА\\",
+        "sprut_base": "MAGNUM",
+        "str_date_working_file": "\\\\172.16.8.87\\d\\.rpa\\.agent\\robot-acquiring-kaspi\\маппинг загрузка файлов.xlsx",
+        "str_parking_folder": "\\\\vault.magnum.local\\Common\\Stuff\\_06_Бухгалтерия\\Банк для сверки безнала\\KASPI БАНК\\KASPI ПАРКОВКА\\",
+        "str_path_mapping_excel_file": "\\\\vault.magnum.local\\Common\\Stuff\\_06_Бухгалтерия\\Банк для сверки безнала\\Mapping Acquiring.xlsx",
+        "str_sales_folder": "\\\\vault.magnum.local\\Common\\Stuff\\_06_Бухгалтерия\\Банк для сверки безнала\\KASPI POS терминал\\POS ТЕРМИНАЛ Кaspi Bank\\",
+        "to_whom": "AkhmetovaN@magnum.kz;Mukhtarova@magnum.kz"
+    })
 sprut_base = json_read(config_path)["sprut_base"]
 
 common_network_folder = Path(json_read(config_path)["common_network_folder"])
@@ -112,3 +125,4 @@ if ctypes.windll.user32.GetKeyboardLayout(0) != 67699721:
     raise Exception(__err__)
 
 generate(Path(str_date_working_file))
+delta = json_read(config_path)['delta']

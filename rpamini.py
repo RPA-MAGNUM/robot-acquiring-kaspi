@@ -182,7 +182,7 @@ def json_read(path: Union[Path, str]) -> Union[dict, list]:
 # ? tested
 def json_write(path: Union[Path, str], data: Union[dict, list]) -> None:
     with open(str(path), 'w', encoding='utf-8') as fp:
-        json.dump(data, fp, ensure_ascii=False)
+        json.dump(data, fp, ensure_ascii=False, indent=4)
 
 
 # ? tested
